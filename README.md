@@ -1,8 +1,12 @@
 # c-socket-request
 Use socket to make request to websites
+#### Download
+```
+git clone https://github.com/qli74/c-socket-request
+cd c-socket-request
+```
 #### Install
  ```
-git clone https://github.com/qli74/c-socket-request
 mkdir build
 cd buid
 cmake ..
@@ -17,10 +21,13 @@ This tool uses socket to make requests to a given url.
  
  -n --port      port number (default: 80)
  
- -t --port      max wait time(ms) (default: 150)
+ -t --maxtime      max wait time(ms) (default: 150)
  
  -h --help      help information
 #### Example
+ ```
+ ./geturl -u http://myworker1.lexlqw.workers.dev/links -p 5 -n 80
+ ```
  ```
  ./geturl --url https://www.google.com --profile 5 --port 80 
  ```
