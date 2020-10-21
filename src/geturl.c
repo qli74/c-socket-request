@@ -1,34 +1,5 @@
 #include <../include/geturl.h>
 
-int socket_connect(char *host, in_port_t port){
-	struct hostent *hp;
-	struct sockaddr_in addr;
-	int on = 1, sock;     
-
-	if((hp = gethostbyname(host)) == NULL){
-		herror("gethostbyname");
-		exit(1);
-	}
-	bcopy(hp->h_addr, &addr.sin_addr, hp->h_length);
-	addr.sin_port = htons(port);
-	addr.sin_family = AF_INET;
-	sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char *)&on, sizeof(int));
-    
-	if(sock == -1){
-		perror("setsockopt");
-		exit(1);
-	}
-	
-	if(connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_in)) == -1){
-		perror("connect");
-		exit(1);
-
-	}
-	return sock;
-}
- 
-
 int main(int argc, char *argv[]){
 	int fd;
 	char buffer[BUFFER_SIZE];
@@ -48,6 +19,7 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"%s",usage);
         exit(1);
     }
+    //parse options using getopt
     printf("\n-------------------- Options --------------------\n");
     int o;
     const char    * short_opt = "hu:p:n:t:";
@@ -91,6 +63,7 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"please input a complete url using --url\n");
         exit(1);
     }
+    //split url to host and path
     char *parsed;
     char *host;
     char path[200]="/";
@@ -108,8 +81,11 @@ int main(int argc, char *argv[]){
     if(saveptr1!=NULL)
         strcat(path,saveptr1);
     printf("host:%s\npath:%s\n",host,path);
+    
+    //connect to host
 	fd = socket_connect(host, atoi(port));
-        
+    
+    //generate request message
     char message[200];
     sprintf(message, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", path, host);
     printf("\n-------------------- Request --------------------\n%s", message);
@@ -120,6 +96,7 @@ int main(int argc, char *argv[]){
     tv.tv_usec = waittime*1000;
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     
+    //make requests
     int failed=0;
     int errors[profile];
     clock_t start, end;
@@ -148,10 +125,9 @@ int main(int argc, char *argv[]){
         }
         errors[j]=error;
 
-        //read message from server
+        //read message from server, each time read up to BUFFER_SIZE-1 bytes
         printf("---------- Time:%d  Message form server ----------\n\n", j+1);
         int c=BUFFER_SIZE-1;
-        //while(c == (BUFFER_SIZE-1)){
         while(c>0){
             c=read(fd, buffer, BUFFER_SIZE - 1);
             if(c>0)
@@ -166,6 +142,8 @@ int main(int argc, char *argv[]){
     }
     shutdown(fd, SHUT_RDWR);
     close(fd);
+    
+    //Output analyss result
     printf("-------------------- Analysis -------------------\n");
     printf("number of requests: %d\n",profile);
     printf("fastest time: %.3fms\n",findmax(time_used,profile)*1000);
@@ -181,6 +159,35 @@ int main(int argc, char *argv[]){
     printf("\nsize in bytes of the smallest response: %.0f\n",findmin(sizes,profile));
     printf("size in bytes of the largest response: %.0f\n",findmax(sizes,profile));
     return 0;
+}
+
+int socket_connect(char *host, in_port_t port){
+    struct hostent *hp;
+    struct sockaddr_in addr;
+    int on = 1, sock;
+    //connect to host
+    if((hp = gethostbyname(host)) == NULL){
+        //failed to connect to host
+        herror("gethostbyname");
+        exit(1);
+    }
+    bcopy(hp->h_addr, &addr.sin_addr, hp->h_length);
+    addr.sin_port = htons(port);
+    addr.sin_family = AF_INET;
+    sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char *)&on, sizeof(int));
+    
+    if(sock == -1){
+        perror("setsockopt");
+        exit(1);
+    }
+    
+    if(connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_in)) == -1){
+        perror("connect");
+        exit(1);
+
+    }
+    return sock;
 }
 
 double findmax(double arr[],int n)
