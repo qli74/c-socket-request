@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
 -u --url       destination url \n \
 -p --profile   number of requests (default: 1)\n \
 -n --port      port number (default: 80)\n \
--t --port      max wait time(ms) (default: 150)\n \
+-t --maxtime      max wait time(ms) (default: 150)\n \
 -h --help      help information\n";
     if(argc < 2){
         fprintf(stderr,"%s",usage);
